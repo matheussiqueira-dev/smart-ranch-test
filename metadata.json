@@ -1,0 +1,8 @@
+{
+  "name": "Smart Ranch Vision",
+  "description": "Sistema de monitoramento inteligente de gado utilizando visão computacional e IA para detecção precoce de problemas de saúde.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
