@@ -1,25 +1,23 @@
-# Smart Ranch Vision AI
+# Smart Ranch Vision AI — Backend
 
-## Visão Geral do Frontend
-Interface operacional para monitoramento do rebanho com foco em decisões rápidas, clareza de prioridade e experiência de uso em campo. O frontend consolida alertas, histórico de análises, tarefas e fluxos de ação em um painel responsivo e acessível.
+## Visão Geral do Backend
+Backend responsável por orquestrar análises de imagem, persistir histórico e fornecer um relay seguro para áudio em tempo real. O foco é segurança, performance e escalabilidade, mantendo contratos claros para o frontend.
 
-## Stack e Tecnologias
-- Vite + React 19 + TypeScript
-- Tailwind via CDN (UI)
-- Recharts (gráficos)
-- Relay seguro via backend (API + WebSocket)
+## Arquitetura
+- **Monólito modular** com camadas de configuração, middleware, serviços, rotas e persistência.
+- **Entrada única** em `server/src/index.js` com rotas versionadas (`/api/v1`).
+- **Relay de voz** via WebSocket (`/voice`) com proteção opcional por token.
 
-## Funcionalidades Principais
-- Painel executivo com KPIs e prioridades do dia.
-- Monitoramento vivo com upload de frames, histórico persistido e exportação.
-- Central de alertas com busca, filtros e criação de missões.
-- Sala de operações com quadro de tarefas, playbooks e gestão de equipe.
-- Assistente de voz com relay seguro e status em tempo real.
+## Tecnologias Utilizadas
+- Node.js (ESM)
+- Express
+- WebSocket (`ws`)
+- Persistência em JSON com escrita atômica
 
-## Setup e Build
-### Backend (proxy seguro e histórico)
-1. Entre em `server` e instale as dependências:
+## Setup e Execução
+1. Instale dependências:
 ```
+cd server
 npm install
 ```
 2. Crie `server/.env`:
@@ -28,49 +26,47 @@ AI_API_KEY=SUACHAVEAQUI
 AI_VISION_URL=https://seu-endpoint/vision
 AI_VOICE_WS_URL=wss://seu-endpoint/voice
 AI_VOICE_INIT_PAYLOAD={"type":"start"}
+API_ACCESS_KEY=SEU_TOKEN_INTERNO
+CORS_ORIGINS=http://localhost:3000
+HISTORY_MAX=500
+REQUEST_LIMIT_MB=20
 PORT=5174
 ```
-3. Suba o backend:
+3. Execute:
 ```
 npm run dev
 ```
-Ou pela raiz:
-```
-npm run dev:server
-```
-
-### Frontend
-1. Na raiz do projeto, instale as dependências:
-```
-npm install
-```
-2. Rode o frontend:
-```
-npm run dev
-```
-
-O Vite faz proxy automático de `/api` e `/voice` para `http://localhost:5174`.
 
 ## Estrutura do Projeto
-- `App.tsx` — layout principal e navegação entre módulos.
-- `components/` — páginas e componentes de UI.
-- `components/ui/` — design system (Card, Badge, Button, SectionHeader, StatCard).
-- `data.ts` — mocks e dados iniciais para ambiente de demonstração.
-- `services/ai.ts` — cliente HTTP do backend.
-- `server/` — API, persistência e relay de voz.
-- `types.ts` — modelos e contratos compartilhados.
+- `server/src/index.js` — bootstrap, middlewares e WebSocket.
+- `server/src/config.js` — variáveis de ambiente e defaults.
+- `server/src/logger.js` — logging estruturado.
+- `server/src/middleware/` — auth, rate limit e error handler.
+- `server/src/routes/api.js` — endpoints REST versionados.
+- `server/src/services/vision.js` — integração com provedor externo de visão.
+- `server/src/storage.js` — persistência em arquivo JSON com escrita atômica.
+- `server/src/utils/validation.js` — validação e sanitização de dados.
 
-## Boas Práticas Adotadas
-- Design system com tokens visuais e componentes reutilizáveis.
-- Estados derivados com `useMemo` para melhor performance.
-- Separação de dados, UI e serviços para escalabilidade.
-- Acessibilidade em inputs, filtros e ações críticas.
+## Endpoints Principais
+- `GET /api/health` — health check.
+- `GET /api/v1/history` — histórico paginado e filtrável por câmera.
+- `GET /api/v1/history/:id` — item específico do histórico.
+- `GET /api/v1/summary` — resumo operacional (média, críticos, total).
+- `POST /api/v1/analyze` — análise de imagem e persistência do resultado.
+- `WS /voice` — relay seguro de áudio.
+
+## Boas Práticas e Padrões
+- Validação de entrada e sanitização de base64.
+- Rate limiting simples e headers de segurança.
+- Autenticação por `x-api-key` (opcional).
+- Escrita atômica no storage com fila de updates.
+- Logs com `requestId` para rastreabilidade.
 
 ## Melhorias Futuras
-- Persistência em banco (SQLite/Postgres) e trilha de auditoria.
-- Autenticação e RBAC por equipe.
-- Observabilidade com logs estruturados e métricas.
-- Cache para análises recorrentes e otimização de custos.
+- Persistência em banco (PostgreSQL/SQLite).
+- Autenticação JWT e RBAC.
+- Observabilidade com métricas e tracing.
+- Cache inteligente para resultados repetidos.
 
 ---
 Autoria: Matheus Siqueira  

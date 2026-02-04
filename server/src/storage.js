@@ -1,11 +1,14 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { logger } from './logger.js';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'history.json');
+let writeQueue = Promise.resolve();
 
 const createDefaultHistory = () => [
   {
+    id: 'seed-1',
     cameraId: 'cam-01',
     timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     cattleCount: 15,
@@ -15,6 +18,7 @@ const createDefaultHistory = () => [
     rawAnalysis: 'Rebanho em comportamento normal de pastejo. Sem sinais visuais de estresse.',
   },
   {
+    id: 'seed-2',
     cameraId: 'cam-01',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
     cattleCount: 14,
@@ -30,6 +34,7 @@ const createDefaultHistory = () => [
     rawAnalysis: 'A maioria do gado está calma, mas um animal apresenta movimentação excessiva.',
   },
   {
+    id: 'seed-3',
     cameraId: 'cam-02',
     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     cattleCount: 8,
@@ -45,7 +50,7 @@ const ensureStore = async () => {
 
   try {
     await fs.access(DATA_FILE);
-  } catch (error) {
+  } catch {
     const initialData = { history: createDefaultHistory() };
     await fs.writeFile(DATA_FILE, JSON.stringify(initialData, null, 2));
   }
@@ -61,6 +66,7 @@ export const readStore = async () => {
       history: Array.isArray(parsed.history) ? parsed.history : [],
     };
   } catch (error) {
+    logger.warn('Falha ao interpretar storage, reiniciando arquivo.', { error: error?.message });
     return { history: [] };
   }
 };
@@ -70,5 +76,19 @@ export const writeStore = async (data) => {
   const payload = {
     history: Array.isArray(data.history) ? data.history : [],
   };
-  await fs.writeFile(DATA_FILE, JSON.stringify(payload, null, 2));
+
+  const tempFile = `${DATA_FILE}.tmp`;
+  await fs.writeFile(tempFile, JSON.stringify(payload, null, 2));
+  await fs.rename(tempFile, DATA_FILE);
+};
+
+export const updateStore = async (mutator) => {
+  writeQueue = writeQueue.then(async () => {
+    const current = await readStore();
+    const next = (await mutator(current)) || current;
+    await writeStore(next);
+    return next;
+  });
+
+  return writeQueue;
 };

@@ -19,8 +19,10 @@ const SUGGESTED_PROMPTS = [
 const getRelayUrl = () => {
   const override = import.meta.env.VITE_VOICE_RELAY_URL as string | undefined;
   if (override) return override;
+  const token = import.meta.env.VITE_API_TOKEN as string | undefined;
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  return `${protocol}://${window.location.host}/voice`;
+  const base = `${protocol}://${window.location.host}/voice`;
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 };
 
 function decode(base64: string) {
