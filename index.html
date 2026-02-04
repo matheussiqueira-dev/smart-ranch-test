@@ -9,10 +9,17 @@
       @import url('https://fonts.bunny.net/css?family=manrope:300,400,500,600,700&family=space-grotesk:400,500,600,700');
 
       :root {
-        --bg: #0b0f0a;
-        --ink: #eef2ea;
-        --muted: #9fb0a1;
-        --border: rgba(154, 174, 154, 0.25);
+        --bg: #0a0d0b;
+        --surface: #111612;
+        --surface-2: #161d18;
+        --surface-3: #0f1411;
+        --ink: #f5f2ea;
+        --muted: #a1aba2;
+        --accent: #f1b357;
+        --accent-2: #7ad3a6;
+        --danger: #f87171;
+        --warning: #fbbf24;
+        --info: #60a5fa;
       }
 
       * {
@@ -22,6 +29,10 @@
       body {
         font-family: 'Manrope', sans-serif;
         background-color: var(--bg);
+        background-image:
+          radial-gradient(circle at 12% 12%, rgba(122, 211, 166, 0.2), transparent 40%),
+          radial-gradient(circle at 90% 10%, rgba(241, 179, 87, 0.2), transparent 45%),
+          radial-gradient(circle at 70% 90%, rgba(96, 165, 250, 0.15), transparent 40%);
         color: var(--ink);
         min-height: 100vh;
       }

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { FieldTask, Playbook, TeamMember, TaskStatus } from '../types';
 import { AlertTriangle, CheckCircle, ClipboardList, Clock, MapPin, Users } from './Icons';
+import { Badge, Button, Card, SectionHeader } from './ui';
 
 interface OperationsProps {
   tasks: FieldTask[];
@@ -55,23 +56,23 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
     });
   };
 
-  const statusBadge = (status: TaskStatus) => {
-    if (status === 'backlog') return 'border-amber-400/30 bg-amber-500/20 text-amber-100';
-    if (status === 'in_progress') return 'border-sky-400/30 bg-sky-500/20 text-sky-100';
-    return 'border-emerald-400/30 bg-emerald-500/20 text-emerald-100';
+  const statusTone = (status: TaskStatus) => {
+    if (status === 'backlog') return 'warning';
+    if (status === 'in_progress') return 'info';
+    return 'success';
   };
 
   return (
-    <div className="grid gap-6 pb-10 lg:grid-cols-[minmax(0,1.2fr),minmax(0,0.8fr)]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr),minmax(0,0.8fr)]">
       <div className="space-y-6">
-        <div>
-          <h2 className="font-display text-3xl text-white">Sala de Operações</h2>
-          <p className="text-sm text-[color:var(--muted)]">Organize missões, acompanhe playbooks e mantenha a equipe sincronizada.</p>
-        </div>
+        <SectionHeader
+          title="Sala de Operações"
+          subtitle="Organize missões, acompanhe playbooks e mantenha a equipe sincronizada."
+        />
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <Card>
           <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-amber-300" />
+            <ClipboardList className="h-5 w-5 text-[color:var(--accent)]" />
             <h3 className="font-display text-lg text-white">Quadro de missões</h3>
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -93,9 +94,9 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
                     <div key={task.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-white">{task.title}</p>
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${statusBadge(task.status)}`}>
+                        <Badge tone={statusTone(task.status)}>
                           {task.status === 'backlog' ? 'Backlog' : task.status === 'in_progress' ? 'Em execução' : 'Concluída'}
-                        </span>
+                        </Badge>
                       </div>
                       <div className="mt-2 space-y-1 text-xs text-[color:var(--muted)]">
                         <p>Responsável: {task.owner}</p>
@@ -109,28 +110,19 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {task.status === 'backlog' && (
-                          <button
-                            onClick={() => onUpdateTaskStatus(task.id, 'in_progress')}
-                            className="rounded-full border border-sky-400/30 bg-sky-500/20 px-3 py-1 text-xs text-sky-100"
-                          >
+                          <Button variant="ghost" onClick={() => onUpdateTaskStatus(task.id, 'in_progress')}>
                             Iniciar
-                          </button>
+                          </Button>
                         )}
                         {task.status === 'in_progress' && (
-                          <button
-                            onClick={() => onUpdateTaskStatus(task.id, 'done')}
-                            className="rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-xs text-emerald-100"
-                          >
+                          <Button variant="primary" onClick={() => onUpdateTaskStatus(task.id, 'done')}>
                             Concluir
-                          </button>
+                          </Button>
                         )}
                         {task.status === 'done' && (
-                          <button
-                            onClick={() => onUpdateTaskStatus(task.id, 'backlog')}
-                            className="rounded-full border border-amber-400/30 bg-amber-500/20 px-3 py-1 text-xs text-amber-100"
-                          >
+                          <Button variant="secondary" onClick={() => onUpdateTaskStatus(task.id, 'backlog')}>
                             Reabrir
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -139,9 +131,9 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <Card>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-rose-300" />
             <h3 className="font-display text-lg text-white">Playbooks inteligentes</h3>
@@ -152,17 +144,9 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
               <div key={playbook.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-white">{playbook.title}</p>
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
-                      playbook.severity === 'critical'
-                        ? 'border-rose-400/30 bg-rose-500/20 text-rose-100'
-                        : playbook.severity === 'warning'
-                        ? 'border-amber-400/30 bg-amber-500/20 text-amber-100'
-                        : 'border-sky-400/30 bg-sky-500/20 text-sky-100'
-                    }`}
-                  >
+                  <Badge tone={playbook.severity === 'critical' ? 'danger' : playbook.severity === 'warning' ? 'warning' : 'info'}>
                     {playbook.severity === 'critical' ? 'Crítico' : playbook.severity === 'warning' ? 'Atenção' : 'Info'}
-                  </span>
+                  </Badge>
                 </div>
                 <p className="mt-2 text-xs text-[color:var(--muted)]">Trigger: {playbook.trigger}</p>
                 <ul className="mt-3 space-y-2 text-xs text-white/80">
@@ -181,11 +165,11 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <Card>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-emerald-300" />
             <h3 className="font-display text-lg text-white">Criar missão</h3>
@@ -235,16 +219,13 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
               rows={3}
               className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white placeholder:text-[color:var(--muted)]"
             ></textarea>
-            <button
-              type="submit"
-              className="w-full rounded-full bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400"
-            >
+            <Button type="submit" variant="primary" className="w-full">
               Criar missão
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <Card>
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-sky-300" />
             <h3 className="font-display text-lg text-white">Equipe de campo</h3>
@@ -257,24 +238,16 @@ const Operations: React.FC<OperationsProps> = ({ tasks, playbooks, team, onCreat
                     <p className="text-sm font-semibold text-white">{member.name}</p>
                     <p className="text-xs text-[color:var(--muted)]">{member.role}</p>
                   </div>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.2em] ${
-                      member.status === 'available'
-                        ? 'border-emerald-400/30 bg-emerald-500/20 text-emerald-100'
-                        : member.status === 'field'
-                        ? 'border-amber-400/30 bg-amber-500/20 text-amber-100'
-                        : 'border-white/20 bg-white/10 text-[color:var(--muted)]'
-                    }`}
-                  >
+                  <Badge tone={member.status === 'available' ? 'success' : member.status === 'field' ? 'warning' : 'neutral'}>
                     {member.status === 'available' ? 'Disponível' : member.status === 'field' ? 'Em campo' : 'Offline'}
-                  </span>
+                  </Badge>
                 </div>
                 <p className="mt-2 text-xs text-[color:var(--muted)]">{member.shift}</p>
                 {member.focus && <p className="mt-1 text-xs text-white/70">Foco: {member.focus}</p>}
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

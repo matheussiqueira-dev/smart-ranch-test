@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff } from './Icons';
+import { Mic, MicOff, Sparkles } from './Icons';
+import { Button, Card, SectionHeader } from './ui';
 
 interface RelayMessage {
   type: 'audio' | 'interrupted' | 'error' | 'ready';
@@ -8,14 +9,19 @@ interface RelayMessage {
   message?: string;
 }
 
+const SUGGESTED_PROMPTS = [
+  'Resumo de saúde do rebanho hoje',
+  'Prioridades para o pasto norte',
+  'Checklist rápido de hidratação',
+  'Recomendações para estresse térmico',
+];
+
 const getRelayUrl = () => {
   const override = import.meta.env.VITE_VOICE_RELAY_URL as string | undefined;
   if (override) return override;
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   return `${protocol}://${window.location.host}/voice`;
 };
-
-// --- Audio Utilities ---
 
 function decode(base64: string) {
   const binaryString = atob(base64);
@@ -235,79 +241,69 @@ const VoiceAgent: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center animate-fadeIn p-6">
-      <div className="text-center mb-10 space-y-4">
-        <h2 className="text-4xl font-bold text-white">Assistente Veterinária AI</h2>
-        <p className="text-slate-400 max-w-md mx-auto">
-          Converse em tempo real com a inteligência do Smart Ranch.
-          Tire dúvidas sobre manejo, peça relatórios ou discuta diagnósticos.
-        </p>
-      </div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr),minmax(0,0.8fr)]">
+      <div className="space-y-6">
+        <SectionHeader
+          title="Assistente de Voz"
+          subtitle="Interação por áudio para acelerar decisões no campo."
+        />
 
-      <div className="relative">
-        {isActive && (
-          <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping blur-xl"></div>
-        )}
-
-        <button
-          onClick={isActive ? stopSession : startSession}
-          className={`relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl border-4 ${
-            isActive
-              ? 'bg-red-500/10 border-red-500 hover:bg-red-500/20'
-              : 'bg-green-600 hover:bg-green-500 border-green-400'
-          }`}
-        >
-          {isActive ? (
-            <div className="flex flex-col items-center gap-2">
-              <MicOff className="w-12 h-12 text-red-500" />
-              <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Parar</span>
+        <Card className="flex flex-col items-center gap-6 text-center">
+          <div className={`relative flex h-48 w-48 items-center justify-center rounded-full border-4 ${
+            isActive ? 'border-rose-400 bg-rose-500/10' : 'border-[color:var(--accent-2)] bg-[color:var(--accent-2)]/20'
+          }`}>
+            {isActive && <div className="absolute inset-0 rounded-full bg-rose-500/20 blur-2xl"></div>}
+            <div className="relative flex flex-col items-center gap-2">
+              {isActive ? <MicOff className="h-12 w-12 text-rose-200" /> : <Mic className="h-12 w-12 text-white" />}
+              <span className="text-xs uppercase tracking-[0.4em] text-white">{isActive ? 'Parar' : 'Falar'}</span>
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Mic className="w-12 h-12 text-white" />
-              <span className="text-xs font-bold text-white uppercase tracking-widest">Falar</span>
+          </div>
+
+          <Button variant={isActive ? 'secondary' : 'primary'} onClick={isActive ? stopSession : startSession}>
+            {isActive ? 'Encerrar sessão' : 'Iniciar conversa'}
+          </Button>
+
+          {error && (
+            <div className="rounded-full border border-rose-400/30 bg-rose-500/20 px-4 py-2 text-xs text-rose-100">
+              {error}
             </div>
           )}
-        </button>
+
+          {!error && isActive && (
+            <div className="flex items-center gap-2 text-xs text-[color:var(--muted)]">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--accent-2)] opacity-70"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--accent-2)]"></span>
+              </span>
+              {isSpeaking ? 'IA respondendo' : 'Ouvindo o ambiente'}
+            </div>
+          )}
+        </Card>
       </div>
 
-      <div className="mt-12 h-16 flex flex-col items-center justify-center">
-        {error && (
-          <div className="text-red-400 bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20">
-            {error}
+      <div className="space-y-6">
+        <Card>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[color:var(--accent)]" />
+            <h3 className="font-display text-lg text-white">Comandos sugeridos</h3>
           </div>
-        )}
-
-        {isActive && !error && (
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-            <span className="text-slate-300 font-mono text-sm">
-              {isSpeaking ? 'IA Falando...' : 'Ouvindo...'}
-            </span>
-          </div>
-        )}
-
-        {isSpeaking && (
-          <div className="flex gap-1 mt-4 items-end h-8">
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="w-1 bg-green-400 rounded-full animate-pulse"
-                style={{
-                  height: `${Math.random() * 100}%`,
-                  animationDuration: `${0.2 + Math.random() * 0.3}s`
-                }}
-              ></div>
+          <p className="mt-2 text-sm text-[color:var(--muted)]">Sugestões rápidas para direcionar a conversa.</p>
+          <div className="mt-4 space-y-2">
+            {SUGGESTED_PROMPTS.map((prompt) => (
+              <div key={prompt} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/80">
+                {prompt}
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </Card>
 
-      <div className="mt-auto text-slate-500 text-sm max-w-lg text-center">
-        <p>Relay seguro via backend • Áudio em tempo real</p>
+        <Card>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted)]">Relay seguro</p>
+          <p className="mt-2 text-lg font-semibold text-white">Conexão protegida no backend</p>
+          <p className="mt-2 text-sm text-[color:var(--muted)]">
+            Os fluxos de áudio são encaminhados sem exposição de credenciais no navegador.
+          </p>
+        </Card>
       </div>
     </div>
   );

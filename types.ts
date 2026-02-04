@@ -4,6 +4,14 @@ export enum HealthStatus {
   CRITICAL = 'Crítico',
 }
 
+export type AlertSeverity = 'critical' | 'warning' | 'info';
+export type AlertStatus = 'active' | 'resolved';
+
+export type TaskStatus = 'backlog' | 'in_progress' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export type TeamStatus = 'available' | 'field' | 'offline';
+
 export interface IdentifiedIssue {
   issue: string;
   description: string;
@@ -17,7 +25,7 @@ export interface AnalysisResult {
   healthScore: number; // 0-100
   recommendations: string[];
   rawAnalysis: string;
-  cameraId?: string; // Campo opcional para vincular análise a uma câmera
+  cameraId?: string;
 }
 
 export interface CameraFeed {
@@ -31,10 +39,44 @@ export interface CameraFeed {
 
 export interface Alert {
   id: string;
-  cameraId: string;
-  severity: 'low' | 'medium' | 'high';
-  message: string;
-  timestamp: Date;
+  cameraId?: string;
+  severity: AlertSeverity;
+  title: string;
+  description: string;
+  timestamp: string;
+  location: string;
+  status: AlertStatus;
+}
+
+export interface FieldTask {
+  id: string;
+  title: string;
+  owner: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueAt: string;
+  location?: string;
+  notes?: string;
+  sourceAlertId?: string;
+}
+
+export interface Playbook {
+  id: string;
+  title: string;
+  trigger: string;
+  steps: string[];
+  severity: AlertSeverity;
+  slaHours: number;
+  ownerRole: string;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  shift: string;
+  status: TeamStatus;
+  focus?: string;
 }
 
 export interface ChartDataPoint {

@@ -1,22 +1,22 @@
 # Smart Ranch Vision AI
 
-## Visão Geral
-Plataforma de monitoramento inteligente para fazendas, combinando visão computacional, análises operacionais e um centro de decisões para saúde, segurança e produtividade do rebanho.
+## Visão Geral do Frontend
+Interface operacional para monitoramento do rebanho com foco em decisões rápidas, clareza de prioridade e experiência de uso em campo. O frontend consolida alertas, histórico de análises, tarefas e fluxos de ação em um painel responsivo e acessível.
 
-## Tecnologias Utilizadas
+## Stack e Tecnologias
 - Vite + React 19 + TypeScript
 - Tailwind via CDN (UI)
 - Recharts (gráficos)
-- Backend Node.js + Express (proxy seguro, persistência e relay)
+- Relay seguro via backend (API + WebSocket)
 
 ## Funcionalidades Principais
-- Dashboard estratégico com KPIs de saúde, alertas e missões prioritárias.
-- Monitoramento vivo com upload de frames, histórico persistido e exportação JSON por câmera.
-- Central de alertas com filtros inteligentes e criação de missões operacionais.
-- Sala de operações com quadro de tarefas, playbooks e cobertura da equipe.
-- Assistente de voz em tempo real via relay seguro no backend.
+- Painel executivo com KPIs e prioridades do dia.
+- Monitoramento vivo com upload de frames, histórico persistido e exportação.
+- Central de alertas com busca, filtros e criação de missões.
+- Sala de operações com quadro de tarefas, playbooks e gestão de equipe.
+- Assistente de voz com relay seguro e status em tempo real.
 
-## Instalação e Uso
+## Setup e Build
 ### Backend (proxy seguro e histórico)
 1. Entre em `server` e instale as dependências:
 ```
@@ -53,23 +53,24 @@ O Vite faz proxy automático de `/api` e `/voice` para `http://localhost:5174`.
 
 ## Estrutura do Projeto
 - `App.tsx` — layout principal e navegação entre módulos.
-- `components/` — módulos de UI (Dashboard, LiveMonitor, Analytics, Alerts, Operations, VoiceAgent, Sidebar, Icons).
+- `components/` — páginas e componentes de UI.
+- `components/ui/` — design system (Card, Badge, Button, SectionHeader, StatCard).
+- `data.ts` — mocks e dados iniciais para ambiente de demonstração.
 - `services/ai.ts` — cliente HTTP do backend.
-- `server/src/index.js` — API, persistência e relay de voz.
-- `server/src/storage.js` — persistência em JSON.
-- `types.ts` — modelos tipados e contratos compartilhados.
+- `server/` — API, persistência e relay de voz.
+- `types.ts` — modelos e contratos compartilhados.
 
-## Boas Práticas
-- Dados críticos isolados no backend, evitando exposição de credenciais.
-- Tipagem forte e contratos estáveis para features operacionais.
-- Fallback com análise simulada quando o provedor externo está indisponível.
-- UI responsiva e hierarquia clara para uso em campo.
+## Boas Práticas Adotadas
+- Design system com tokens visuais e componentes reutilizáveis.
+- Estados derivados com `useMemo` para melhor performance.
+- Separação de dados, UI e serviços para escalabilidade.
+- Acessibilidade em inputs, filtros e ações críticas.
 
-## Possíveis Melhorias Futuras
-- Persistência em banco (PostgreSQL/SQLite) com auditoria.
-- Autenticação e RBAC por equipes.
-- Pipeline de observabilidade com logs estruturados e métricas.
-- Camada de cache para análises recorrentes.
+## Melhorias Futuras
+- Persistência em banco (SQLite/Postgres) e trilha de auditoria.
+- Autenticação e RBAC por equipe.
+- Observabilidade com logs estruturados e métricas.
+- Cache para análises recorrentes e otimização de custos.
 
 ---
 Autoria: Matheus Siqueira  
