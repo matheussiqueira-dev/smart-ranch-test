@@ -34,18 +34,19 @@ npm run dev:server
 ```
 npm install
 ```
-2. (Opcional) Para o **assistente de voz**, crie `.env.local` na raiz:
-```
-VITE_GEMINI_API_KEY=SUACHAVEAQUI
-```
-3. Rode o frontend:
+2. Rode o frontend:
 ```
 npm run dev
 ```
 
-O Vite faz proxy automático de `/api` para `http://localhost:5174`.
+O Vite faz proxy automático de `/api` e `/voice` para `http://localhost:5174`.
+
+Se precisar apontar o relay para outro host, defina:
+```
+VITE_VOICE_RELAY_URL=ws://localhost:5174/voice
+```
 
 ## Observações
 - O histórico é persistido em `server/data/history.json`.
 - A análise de imagens **não expõe** a API Key no frontend.
-- O assistente de voz ainda usa a chave no frontend (melhoria futura: proxy/relay também no backend).
+- O assistente de voz agora usa relay seguro no backend.

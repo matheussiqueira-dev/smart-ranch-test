@@ -1,7 +1,9 @@
-import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { GoogleGenAI, Type } from '@google/genai';
+import express from 'express';
+import http from 'http';
+import { WebSocketServer } from 'ws';
+import { GoogleGenAI, Modality, Type } from '@google/genai';
 import { readStore, writeStore } from './storage.js';
 
 dotenv.config();
@@ -58,6 +60,11 @@ const analysisSchema = {
   },
   required: ['cattleCount', 'healthScore', 'identifiedIssues', 'recommendations', 'summary'],
 };
+
+const voiceInstruction = `Você é a assistente virtual veterinária do Smart Ranch.
+Fale de forma breve, profissional mas amigável.
+Ajude o fazendeiro com dúvidas sobre saúde do gado, clima e recomendações de manejo.
+Se perguntarem sobre o status atual, invente um resumo baseada em dados fictícios de 'saúde boa' e 'um alerta crítico no pasto norte'.`;
 
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
@@ -160,6 +167,96 @@ app.post('/api/analyze', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+const wss = new WebSocketServer({ server, path: '/voice' });
+
+const safeSend = (ws, payload) => {
+  if (ws.readyState === ws.OPEN) {
+    ws.send(JSON.stringify(payload));
+  }
+};
+
+wss.on('connection', async (ws) => {
+  if (!ai) {
+    safeSend(ws, { type: 'error', message: 'GEMINI_API_KEY não configurada no backend.' });
+    ws.close();
+    return;
+  }
+
+  let session = null;
+
+  try {
+    session = await ai.live.connect({
+      model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
+        },
+        systemInstruction: voiceInstruction,
+      },
+      callbacks: {
+        onopen: () => {
+          safeSend(ws, { type: 'ready' });
+        },
+        onmessage: (message) => {
+          const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+          if (base64Audio) {
+            safeSend(ws, { type: 'audio', data: base64Audio });
+          }
+
+          if (message.serverContent?.interrupted) {
+            safeSend(ws, { type: 'interrupted' });
+          }
+        },
+        onclose: () => {
+          ws.close();
+        },
+        onerror: (error) => {
+          console.error('Erro na sessão Gemini Live:', error);
+          safeSend(ws, { type: 'error', message: 'Erro na conexão com a IA.' });
+          ws.close();
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Falha ao iniciar sessão de voz:', error);
+    safeSend(ws, { type: 'error', message: 'Falha ao iniciar sessão de voz.' });
+    ws.close();
+    return;
+  }
+
+  ws.on('message', (raw) => {
+    try {
+      const payload = JSON.parse(raw.toString());
+
+      if (payload?.type === 'audio' && payload?.data) {
+        session?.sendRealtimeInput({
+          media: {
+            data: payload.data,
+            mimeType: payload.mimeType || 'audio/pcm;rate=16000',
+          },
+        });
+      }
+
+      if (payload?.type === 'stop') {
+        session?.close();
+      }
+    } catch (error) {
+      console.warn('Mensagem inválida no relay de voz', error);
+    }
+  });
+
+  ws.on('close', () => {
+    try {
+      session?.close();
+    } catch {
+      // ignore
+    }
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`Smart Ranch backend rodando em http://localhost:${PORT}`);
 });
