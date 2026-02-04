@@ -54,6 +54,10 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.get('/api/v1/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.use('/api', requireApiKey, rateLimit({ windowMs: 60_000, max: 120 }), apiRoutes);
 app.use('/api/v1', requireApiKey, rateLimit({ windowMs: 60_000, max: 120 }), apiRoutes);
 

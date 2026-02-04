@@ -40,3 +40,24 @@ export const fetchHistory = async (): Promise<AnalysisResult[]> => {
   const payload = await response.json();
   return Array.isArray(payload.history) ? payload.history : [];
 };
+
+export interface SummaryResponse {
+  total: number;
+  avgScore: number;
+  critical: number;
+  lastUpdate: string | null;
+}
+
+export const fetchSummary = async (): Promise<SummaryResponse> => {
+  const response = await fetch(`${API_BASE}/summary`, {
+    headers: {
+      ...baseHeaders,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao carregar resumo.');
+  }
+
+  return response.json();
+};

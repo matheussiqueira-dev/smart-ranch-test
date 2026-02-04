@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Activity, AlertTriangle, CheckCircle, Users } from './Icons';
 import { Alert, FieldTask, TeamMember } from '../types';
+import { fetchSummary, SummaryResponse } from '../services/ai';
 import { Badge, Card, SectionHeader, StatCard } from './ui';
 
 const HEALTH_DATA = [
@@ -29,6 +30,8 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ alerts, tasks, camerasOnline, playbooksReady, team }) => {
+  const [summary, setSummary] = useState<SummaryResponse | null>(null);
+
   const activeAlerts = useMemo(() => alerts.filter((alert) => alert.status === 'active'), [alerts]);
   const criticalAlerts = useMemo(() => activeAlerts.filter((alert) => alert.severity === 'critical'), [activeAlerts]);
   const openTasks = useMemo(() => tasks.filter((task) => task.status !== 'done'), [tasks]);
@@ -45,6 +48,30 @@ const Dashboard: React.FC<DashboardProps> = ({ alerts, tasks, camerasOnline, pla
       .slice(0, 3);
   }, [openTasks]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSummary = async () => {
+      try {
+        const payload = await fetchSummary();
+        if (isMounted) {
+          setSummary(payload);
+        }
+      } catch {
+        // Mantém fallback estático caso o backend não esteja disponível
+      }
+    };
+
+    loadSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const avgScore = summary?.avgScore ?? 94;
+  const totalAnalyses = summary?.total ?? 0;
+
   return (
     <div className="space-y-8">
       <SectionHeader
@@ -56,8 +83,8 @@ const Dashboard: React.FC<DashboardProps> = ({ alerts, tasks, camerasOnline, pla
       <div className="grid gap-4 lg:grid-cols-4">
         <StatCard
           label="Saúde média"
-          value="94%"
-          helper="+2.5% vs semana passada"
+          value={`${avgScore}%`}
+          helper={totalAnalyses ? `Total de análises: ${totalAnalyses}` : '+2.5% vs semana passada'}
           icon={<Activity className="h-6 w-6" />}
           tone="success"
         />
