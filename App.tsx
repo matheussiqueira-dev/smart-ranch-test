@@ -6,6 +6,8 @@ import Analytics from './components/Analytics';
 import Alerts from './components/Alerts';
 import VoiceAgent from './components/VoiceAgent';
 
+const HAS_VOICE_KEY = Boolean(import.meta.env.VITE_GEMINI_API_KEY);
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState('dashboard');
 
@@ -36,11 +38,11 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Warning if no API Key */}
-      {!process.env.API_KEY && (
+      {/* Warning if no API Key for voice */}
+      {!HAS_VOICE_KEY && (
         <div className="fixed bottom-4 right-4 bg-red-500/90 text-white px-6 py-4 rounded-xl shadow-lg backdrop-blur max-w-sm z-50">
           <h4 className="font-bold mb-1">Configuração Necessária</h4>
-          <p className="text-sm">A API Key do Google Gemini não foi detectada. A funcionalidade de análise de imagem não funcionará corretamente.</p>
+          <p className="text-sm">A variável VITE_GEMINI_API_KEY não foi detectada. O assistente de voz ficará indisponível.</p>
         </div>
       )}
     </div>

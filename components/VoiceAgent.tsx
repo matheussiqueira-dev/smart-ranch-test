@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { Mic, MicOff, Activity } from './Icons';
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+
 // --- Audio Utilities ---
 
 function decode(base64: string) {
@@ -103,7 +105,13 @@ const VoiceAgent: React.FC = () => {
     setIsActive(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      if (!GEMINI_API_KEY) {
+        setError('API Key ausente. Defina VITE_GEMINI_API_KEY.');
+        setIsActive(false);
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
       // Initialize Audio Contexts
       const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });

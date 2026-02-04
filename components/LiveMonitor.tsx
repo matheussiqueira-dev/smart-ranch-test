@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CameraFeed, AnalysisResult, IdentifiedIssue } from '../types';
-import { analyzeFrame } from '../services/gemini';
+import { analyzeFrame, fetchHistory } from '../services/gemini';
 import { Camera, Video, Upload, Activity, AlertTriangle, CheckCircle, Download, ChevronDown, ChevronUp } from './Icons';
 
 const MOCK_CAMERAS: CameraFeed[] = [
@@ -240,6 +240,27 @@ const LiveMonitor: React.FC = () => {
     }
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadHistory = async () => {
+      try {
+        const remoteHistory = await fetchHistory();
+        if (isMounted && Array.isArray(remoteHistory) && remoteHistory.length > 0) {
+          setHistory(remoteHistory);
+        }
+      } catch (error) {
+        console.warn('Backend indisponível. Usando histórico local.', error);
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   
@@ -323,7 +344,7 @@ const LiveMonitor: React.FC = () => {
       }
 
       const base64Data = imageToAnalyze.split(',')[1];
-      const result = await analyzeFrame(base64Data);
+      const result = await analyzeFrame(base64Data, selectedCamera.id);
       
       // Adiciona o ID da câmera ao resultado
       const resultWithCamera = { ...result, cameraId: selectedCamera.id };
@@ -336,7 +357,7 @@ const LiveMonitor: React.FC = () => {
 
     } catch (error) {
       console.error(error);
-      alert("Erro ao analisar imagem. Verifique sua API Key ou tente novamente.");
+      alert("Erro ao analisar imagem. Verifique se o backend está rodando e se a API Key está configurada.");
     } finally {
       setIsAnalyzing(false);
     }
