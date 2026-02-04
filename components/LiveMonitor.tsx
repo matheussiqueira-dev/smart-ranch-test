@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CameraFeed, AnalysisResult, IdentifiedIssue } from '../types';
-import { analyzeFrame, fetchHistory } from '../services/gemini';
+import { analyzeFrame, fetchHistory } from '../services/ai';
 import { Camera, Video, Upload, Activity, AlertTriangle, CheckCircle, Download, ChevronDown, ChevronUp } from './Icons';
 
 const MOCK_CAMERAS: CameraFeed[] = [
@@ -632,7 +632,7 @@ const LiveMonitor: React.FC = () => {
 
               <div className="pt-4 border-t border-slate-700">
                 <p className="text-xs text-slate-600 text-center">
-                  Análise gerada pelo Gemini 2.5 Flash • {new Date(analysisResult.timestamp).toLocaleTimeString()}
+                  Análise gerada pelo motor de IA • {new Date(analysisResult.timestamp).toLocaleTimeString()}
                 </p>
               </div>
 

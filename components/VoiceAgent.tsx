@@ -307,7 +307,7 @@ const VoiceAgent: React.FC = () => {
       </div>
 
       <div className="mt-auto text-slate-500 text-sm max-w-lg text-center">
-        <p>Relay seguro via backend • Gemini Audio Live</p>
+        <p>Relay seguro via backend • Áudio em tempo real</p>
       </div>
     </div>
   );

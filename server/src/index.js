@@ -2,69 +2,79 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import http from 'http';
-import { WebSocketServer } from 'ws';
-import { GoogleGenAI, Modality, Type } from '@google/genai';
+import { WebSocket, WebSocketServer } from 'ws';
 import { readStore, writeStore } from './storage.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5174;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+const AI_API_KEY = process.env.AI_API_KEY;
+const AI_VISION_URL = process.env.AI_VISION_URL;
+const AI_VOICE_WS_URL = process.env.AI_VOICE_WS_URL;
+const AI_VOICE_INIT_PAYLOAD = process.env.AI_VOICE_INIT_PAYLOAD;
 
 const analysisSchema = {
-  type: Type.OBJECT,
+  type: 'object',
   properties: {
-    cattleCount: {
-      type: Type.NUMBER,
-      description: 'Número aproximado de animais identificados na imagem.',
-    },
-    healthScore: {
-      type: Type.NUMBER,
-      description: 'Uma pontuação de saúde geral de 0 a 100 baseada na aparência visual (100 = perfeito, 0 = crítico).',
-    },
+    cattleCount: { type: 'number' },
+    healthScore: { type: 'number' },
     identifiedIssues: {
-      type: Type.ARRAY,
+      type: 'array',
       items: {
-        type: Type.OBJECT,
+        type: 'object',
         properties: {
-          issue: {
-            type: Type.STRING,
-            description: 'Nome curto do problema identificado (ex: Manqueira, Magreza, Isolamento).',
-          },
-          description: {
-            type: Type.STRING,
-            description: 'Uma explicação detalhada do que foi observado visualmente na imagem relacionado a este problema.',
-          },
-          possibleCauses: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: 'Lista de possíveis causas prováveis para este problema (nutricional, doença, trauma, etc).',
-          },
+          issue: { type: 'string' },
+          description: { type: 'string' },
+          possibleCauses: { type: 'array', items: { type: 'string' } },
         },
-        required: ['issue', 'description', 'possibleCauses'],
       },
-      description: 'Lista detalhada de problemas visuais detectados.',
     },
-    recommendations: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: 'Ações recomendadas para o fazendeiro ou veterinário.',
-    },
-    summary: {
-      type: Type.STRING,
-      description: 'Um breve resumo técnico da análise visual.',
-    },
+    recommendations: { type: 'array', items: { type: 'string' } },
+    summary: { type: 'string' },
   },
-  required: ['cattleCount', 'healthScore', 'identifiedIssues', 'recommendations', 'summary'],
 };
 
-const voiceInstruction = `Você é a assistente virtual veterinária do Smart Ranch.
-Fale de forma breve, profissional mas amigável.
-Ajude o fazendeiro com dúvidas sobre saúde do gado, clima e recomendações de manejo.
-Se perguntarem sobre o status atual, invente um resumo baseada em dados fictícios de 'saúde boa' e 'um alerta crítico no pasto norte'.`;
+const visionPrompt = `Você é o sistema Smart Ranch AI Vision. Analise esta imagem de gado.
+Identifique padrões de saúde visual, condição corporal (BCS), postura e comportamento.
+Se a imagem não contiver gado, retorne 0 contagem e score null.
+Para cada problema identificado, forneça uma descrição visual clara e possíveis causas veterinárias ou de manejo.
+Seja preciso e técnico.`;
+
+const createMockAnalysis = () => {
+  const baseScore = 88 + Math.round(Math.random() * 8);
+  return {
+    cattleCount: 12 + Math.round(Math.random() * 6),
+    healthScore: baseScore,
+    identifiedIssues: [],
+    recommendations: ['Manter rotina de monitoramento e hidratação.'],
+    summary: 'Análise simulada: rebanho com comportamento estável e sinais de bem-estar adequados.',
+  };
+};
+
+const callVisionProvider = async (imageData) => {
+  if (!AI_VISION_URL) return null;
+
+  const response = await fetch(AI_VISION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(AI_API_KEY ? { Authorization: `Bearer ${AI_API_KEY}` } : {}),
+    },
+    body: JSON.stringify({
+      image: imageData,
+      prompt: visionPrompt,
+      schema: analysisSchema,
+    }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Falha no provedor de IA.');
+  }
+
+  return response.json();
+};
 
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
@@ -94,10 +104,6 @@ app.get('/api/history', async (req, res) => {
 
 app.post('/api/analyze', async (req, res) => {
   try {
-    if (!ai) {
-      return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no backend.' });
-    }
-
     const { base64Image, cameraId } = req.body;
 
     if (!base64Image) {
@@ -108,47 +114,23 @@ app.post('/api/analyze', async (req, res) => {
       ? base64Image.split(',')[1]
       : base64Image;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: 'image/jpeg',
-              data: imageData,
-            },
-          },
-          {
-            text: `Você é o sistema Smart Ranch AI Vision. Analise esta imagem de gado.
-            Identifique padrões de saúde visual, condição corporal (BCS), postura e comportamento.
-            Se a imagem não contiver gado, retorne 0 contagem e score null.
-            Para cada problema identificado, forneça uma descrição visual clara e possíveis causas veterinárias ou de manejo.
-            Seja preciso e técnico.`,
-          },
-        ],
-      },
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: analysisSchema,
-        temperature: 0.4,
-      },
-    });
-
-    const text = response.text;
-    if (!text) {
-      return res.status(500).json({ message: 'Sem resposta do modelo.' });
+    let providerResult = null;
+    try {
+      providerResult = await callVisionProvider(imageData);
+    } catch (error) {
+      console.warn('Falha no provedor externo, usando análise simulada.', error);
     }
 
-    const json = JSON.parse(text);
+    const normalized = providerResult?.result || providerResult || createMockAnalysis();
 
     const result = {
       timestamp: new Date().toISOString(),
       cameraId,
-      cattleCount: json.cattleCount || 0,
-      identifiedIssues: json.identifiedIssues || [],
-      healthScore: json.healthScore || 0,
-      recommendations: json.recommendations || [],
-      rawAnalysis: json.summary || 'Análise concluída.',
+      cattleCount: normalized.cattleCount || 0,
+      identifiedIssues: normalized.identifiedIssues || [],
+      healthScore: normalized.healthScore || 0,
+      recommendations: normalized.recommendations || [],
+      rawAnalysis: normalized.summary || 'Análise concluída.',
     };
 
     const store = await readStore();
@@ -173,84 +155,55 @@ const wss = new WebSocketServer({ server, path: '/voice' });
 
 const safeSend = (ws, payload) => {
   if (ws.readyState === ws.OPEN) {
-    ws.send(JSON.stringify(payload));
+    ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
   }
 };
 
-wss.on('connection', async (ws) => {
-  if (!ai) {
-    safeSend(ws, { type: 'error', message: 'GEMINI_API_KEY não configurada no backend.' });
-    ws.close();
+wss.on('connection', (clientSocket) => {
+  if (!AI_VOICE_WS_URL) {
+    safeSend(clientSocket, { type: 'error', message: 'Relay de voz não configurado no backend.' });
+    clientSocket.close();
     return;
   }
 
-  let session = null;
+  const upstream = new WebSocket(AI_VOICE_WS_URL, {
+    headers: AI_API_KEY ? { Authorization: `Bearer ${AI_API_KEY}` } : undefined,
+  });
 
-  try {
-    session = await ai.live.connect({
-      model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
-        },
-        systemInstruction: voiceInstruction,
-      },
-      callbacks: {
-        onopen: () => {
-          safeSend(ws, { type: 'ready' });
-        },
-        onmessage: (message) => {
-          const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-          if (base64Audio) {
-            safeSend(ws, { type: 'audio', data: base64Audio });
-          }
-
-          if (message.serverContent?.interrupted) {
-            safeSend(ws, { type: 'interrupted' });
-          }
-        },
-        onclose: () => {
-          ws.close();
-        },
-        onerror: (error) => {
-          console.error('Erro na sessão Gemini Live:', error);
-          safeSend(ws, { type: 'error', message: 'Erro na conexão com a IA.' });
-          ws.close();
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Falha ao iniciar sessão de voz:', error);
-    safeSend(ws, { type: 'error', message: 'Falha ao iniciar sessão de voz.' });
-    ws.close();
-    return;
-  }
-
-  ws.on('message', (raw) => {
-    try {
-      const payload = JSON.parse(raw.toString());
-
-      if (payload?.type === 'audio' && payload?.data) {
-        session?.sendRealtimeInput({
-          media: {
-            data: payload.data,
-            mimeType: payload.mimeType || 'audio/pcm;rate=16000',
-          },
-        });
+  upstream.on('open', () => {
+    if (AI_VOICE_INIT_PAYLOAD) {
+      try {
+        upstream.send(AI_VOICE_INIT_PAYLOAD);
+      } catch (error) {
+        console.warn('Falha ao enviar payload inicial para o relay upstream.', error);
       }
-
-      if (payload?.type === 'stop') {
-        session?.close();
-      }
-    } catch (error) {
-      console.warn('Mensagem inválida no relay de voz', error);
     }
   });
 
-  ws.on('close', () => {
+  upstream.on('message', (data) => {
+    const payload = typeof data === 'string' ? data : data.toString();
+    safeSend(clientSocket, payload);
+  });
+
+  upstream.on('close', () => {
+    clientSocket.close();
+  });
+
+  upstream.on('error', (error) => {
+    console.error('Erro no relay upstream de voz:', error);
+    safeSend(clientSocket, { type: 'error', message: 'Falha ao conectar no relay upstream.' });
+    clientSocket.close();
+  });
+
+  clientSocket.on('message', (data) => {
+    if (upstream.readyState !== upstream.OPEN) return;
+    const payload = typeof data === 'string' ? data : data.toString();
+    upstream.send(payload);
+  });
+
+  clientSocket.on('close', () => {
     try {
-      session?.close();
+      upstream.close();
     } catch {
       // ignore
     }

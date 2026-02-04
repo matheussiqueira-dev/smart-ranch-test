@@ -6,39 +6,75 @@
     <title>Smart Ranch Vision AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #0f172a; /* Slate 900 */
-        color: #e2e8f0; /* Slate 200 */
+      @import url('https://fonts.bunny.net/css?family=manrope:300,400,500,600,700&family=space-grotesk:400,500,600,700');
+
+      :root {
+        --bg: #0b0f0a;
+        --ink: #eef2ea;
+        --muted: #9fb0a1;
+        --border: rgba(154, 174, 154, 0.25);
       }
-      /* Custom scrollbar */
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Manrope', sans-serif;
+        background-color: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .font-display {
+        font-family: 'Space Grotesk', sans-serif;
+      }
+
+      .bg-grid {
+        background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+
+      ::selection {
+        background: rgba(245, 158, 11, 0.25);
+        color: #fff;
+      }
+
       ::-webkit-scrollbar {
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #1e293b; 
+        background: rgba(12, 17, 12, 0.8);
       }
       ::-webkit-scrollbar-thumb {
-        background: #475569; 
-        border-radius: 4px;
+        background: rgba(148, 163, 148, 0.5);
+        border-radius: 999px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; 
+        background: rgba(148, 163, 148, 0.8);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+      {
+        "imports": {
+          "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+          "react/": "https://esm.sh/react@^19.2.3/",
+          "react": "https://esm.sh/react@^19.2.3",
+          "recharts": "https://esm.sh/recharts@^3.6.0"
+        }
+      }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
   </body>
